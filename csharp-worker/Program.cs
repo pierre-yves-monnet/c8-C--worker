@@ -1,4 +1,4 @@
-sing System;
+﻿using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,7 +13,7 @@ namespace Client.Examples
     {
         private static readonly string DemoProcessPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
         "Resources", "demo-net-process.bpmn");
-        private static readonly string ZeebeUrl = "0.0.0.0:26500";
+        private static readonly string ZeebeUrl = "localhost:26500";
         private static readonly string ProcessInstanceVariables = "{\"a\":\"123\"}";
         private static readonly string JobType = "net-worker";
         private static readonly string WorkerName = Environment.MachineName;
@@ -21,11 +21,20 @@ namespace Client.Examples
 
         public static async Task Main(string[] args)
         {
-            // create zeebe client
-            var client = ZeebeClient.Builder()
+            // create zeebe client - simple server
+            /*var client = ZeebeClient.Builder()
                 .UseLoggerFactory(new NLogLoggerFactory())
                 .UseGatewayAddress(ZeebeUrl)
                 .UsePlainText()
+                .Build();
+                */
+            // create zeebe client - Multi tenancy server, clientid = "modeler", clientSecret= "xxx", audience is "zeebe-api"
+            //   authorizationServerUrl: http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
+            // How do I pass that in the connection?
+            var client = ZeebeClient.Builder()
+                .UseLoggerFactory(new NLogLoggerFactory())
+                .UseGatewayAddress(ZeebeUrl)
+                .UseTransportEncryption()
                 .Build();
 
             var topology = await client.TopologyRequest()
@@ -48,13 +57,14 @@ namespace Client.Examples
             // var processDefinitionKey = deployResponse.Processes[0].ProcessDefinitionKey;
             var processDefinitionKey = "demo-net-process";
 
+            /*
             var processInstance = await client
                 .NewCreateProcessInstanceCommand()
-                .ProcessDefinitionKey(processDefinitionKey)
+                .BpmnProcessId(processDefinitionKey)
                 .Variables(ProcessInstanceVariables)
                 .Send();
-
-            await client.NewSetVariablesCommand(processInstance.ProcessInstanceKey).Variables("{\"wow\":\"this\"}").Local().Send();
+*/
+  /*          await client.NewSetVariablesCommand(processInstance.ProcessInstanceKey).Variables("{\"wow\":\"this\"}").Local().Send();
 
             for (var i = 0; i < WorkCount; i++)
             {
@@ -64,7 +74,7 @@ namespace Client.Examples
                     .Variables(ProcessInstanceVariables)
                     .Send();
             }
-
+*/
             // open job worker
             using (var signal = new EventWaitHandle(false, EventResetMode.AutoReset))
             {
@@ -112,3 +122,4 @@ namespace Client.Examples
             }
         }
     }
+}
